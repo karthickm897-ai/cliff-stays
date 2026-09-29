@@ -133,6 +133,7 @@ export default function HomePage() {
   const [bookingProperty, setBookingProperty] = useState<(typeof PROPERTIES)[number] | null>(null);
   const [activeImageIdx, setActiveImageIdx] = useState<Record<string, number>>({});
   const [imageDirection, setImageDirection] = useState<Record<string, number>>({});
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState('');
   const [bookingConfirmation, setBookingConfirmation] = useState('');
 
@@ -372,12 +373,27 @@ export default function HomePage() {
             return (
               <article id={property.id} key={property.id} className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--paper)] shadow-[0_6px_20px_rgba(32,61,50,0.06)] transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(32,61,50,0.11)]">
                 <div className="grid grid-cols-1 md:grid-cols-[420px_minmax(0,1fr)]">
-                  <div className="group relative h-64 overflow-hidden md:h-[420px]">
+                  <div
+                    className="group relative h-64 touch-pan-y select-none overflow-hidden md:h-[420px]"
+                    onTouchStart={(event) => setTouchStartX(event.targetTouches[0].clientX)}
+                    onTouchEnd={(event) => {
+                      if (touchStartX === null) return;
+
+                      const swipeDistance = touchStartX - event.changedTouches[0].clientX;
+                      if (swipeDistance > 50) {
+                        nextImage(property.id, property.images.length);
+                      } else if (swipeDistance < -50) {
+                        prevImage(property.id, property.images.length);
+                      }
+                      setTouchStartX(null);
+                    }}
+                  >
                     <AnimatePresence initial={false} mode="wait" custom={imageDirection[property.id] ?? 1}>
                       <MotionImage
                         key={property.images[imageIndex]}
                         src={property.images[imageIndex]}
                         alt={property.name}
+                        draggable={false}
                         fill
                         sizes="(max-width: 768px) 100vw, 420px"
                         quality={95}
